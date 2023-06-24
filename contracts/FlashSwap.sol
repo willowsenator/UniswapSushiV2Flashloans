@@ -12,6 +12,7 @@ import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IUniswapV2Router01.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 
+
 contract UniswapCrossSwap {
     using SafeERC20 for IERC20;
 
@@ -27,6 +28,7 @@ contract UniswapCrossSwap {
     address private constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address private constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     
+
     // Trade variables
     uint256 private deadline = block.timestamp + 1 days;
     uint256 private constant MAX_INT = 2 ** 256 - 1;
@@ -56,6 +58,7 @@ contract UniswapCrossSwap {
         address router
     ) private returns (uint256) {
         address pair = IUniswapV2Factory(factory).getPair(
+
             _fromToken,
             _toToken
         );
@@ -71,6 +74,7 @@ contract UniswapCrossSwap {
 
         // Perform Arbitrage - Swap to another token
         uint amountReceived = IUniswapV2Router01(router)
+
             .swapExactTokensForTokens(
                 _amountIn,
                 amountRequired,
@@ -105,6 +109,7 @@ contract UniswapCrossSwap {
         address pair = IUniswapV2Factory(UNISWAP_FACTORY).getPair(
             _tokenBorrow,
             WETH
+
         );
 
         require(pair != address(0), "Pool doesn't exist");
