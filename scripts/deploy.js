@@ -9,7 +9,7 @@ async function main() {
     (await ethers.getBalance(deployer.address)).toString()
   );
 
-  const token = await ethers.deployContract("PancakeswapFlashSwap");
+  const token = await ethers.deployContract("UniswapCrossSwap");
   await token.waitForDeployment();
 
   console.log("Token address:", token.address);

@@ -12,23 +12,22 @@ import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IUniswapV2Router01.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 
-contract PancakeswapFlashSwap {
+
+contract UniswapCrossSwap {
     using SafeERC20 for IERC20;
 
     // Factory and Router Addresses
-    address private constant PANCAKE_FACTORY =
-        0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73;
-    address private constant PANCAKE_ROUTER =
-        0x10ED43C718714eb63d5aA57B78B54704E256024E;
+    address private constant UNISWAP_FACTORY = 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f;
+    address private constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+
+    address private constant SUSHI_FACTORY = 0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac;
+    address private constant SUSHI_ROUTER = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F;
 
     // Token Addresses
-    address private constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
-    address private constant BUSD = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
-    address private constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
-    address private constant USDT = 0x55d398326f99059fF775485246999027B3197955;
-    address private constant DOT = 0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402;
-    address private constant BTCB = 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c;
-    address private constant ETH = 0x2170Ed0880ac9A755fd29B2688956BD959F933F8;
+    address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address private constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address private constant LINK = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    
 
     // Trade variables
     uint256 private deadline = block.timestamp + 1 days;
@@ -54,9 +53,12 @@ contract PancakeswapFlashSwap {
     function placeTrade(
         address _fromToken,
         address _toToken,
-        uint256 _amountIn
+        uint256 _amountIn,
+        address factory,
+        address router
     ) private returns (uint256) {
-        address pair = IUniswapV2Factory(PANCAKE_FACTORY).getPair(
+        address pair = IUniswapV2Factory(factory).getPair(
+
             _fromToken,
             _toToken
         );
@@ -67,11 +69,12 @@ contract PancakeswapFlashSwap {
         path[0] = _fromToken;
         path[1] = _toToken;
 
-        uint256 amountRequired = IUniswapV2Router01(PANCAKE_ROUTER)
+        uint256 amountRequired = IUniswapV2Router01(router)
             .getAmountsOut(_amountIn, path)[1];
 
         // Perform Arbitrage - Swap to another token
-        uint amountReceived = IUniswapV2Router01(PANCAKE_ROUTER)
+        uint amountReceived = IUniswapV2Router01(router)
+
             .swapExactTokensForTokens(
                 _amountIn,
                 amountRequired,
@@ -91,20 +94,22 @@ contract PancakeswapFlashSwap {
         return _output > _input;
     }
 
-    // INITIATE ARBITRAGE
-    function startArbitrage(address _tokenBorrow, uint256 _amount) external {
-        IERC20(WBNB).forceApprove(PANCAKE_ROUTER, MAX_INT);
-        IERC20(BUSD).forceApprove(PANCAKE_ROUTER, MAX_INT);
-        IERC20(CAKE).forceApprove(PANCAKE_ROUTER, MAX_INT);
-        IERC20(USDT).forceApprove(PANCAKE_ROUTER, MAX_INT);
-        IERC20(DOT).forceApprove(PANCAKE_ROUTER, MAX_INT);
-        IERC20(BTCB).forceApprove(PANCAKE_ROUTER, MAX_INT);
-        IERC20(ETH).forceApprove(PANCAKE_ROUTER, MAX_INT);
+    
+    function startCrossSwap(address _tokenBorrow, uint256 _amount) external {
+        IERC20(WETH).forceApprove(UNISWAP_ROUTER, MAX_INT);
+        IERC20(USDC).forceApprove(UNISWAP_ROUTER, MAX_INT);
+        IERC20(LINK).forceApprove(UNISWAP_ROUTER, MAX_INT);
 
+        IERC20(WETH).forceApprove(SUSHI_ROUTER, MAX_INT);
+        IERC20(USDC).forceApprove(SUSHI_ROUTER, MAX_INT);
+        IERC20(LINK).forceApprove(SUSHI_ROUTER, MAX_INT);
+       
+        
         // Get the Factory pair address to combined tokens
-        address pair = IUniswapV2Factory(PANCAKE_FACTORY).getPair(
+        address pair = IUniswapV2Factory(UNISWAP_FACTORY).getPair(
             _tokenBorrow,
-            WBNB
+            WETH
+
         );
 
         require(pair != address(0), "Pool doesn't exist");
@@ -121,7 +126,7 @@ contract PancakeswapFlashSwap {
         IUniswapV2Pair(pair).swap(amount0Out, amount1Out, address(this), data);
     }
 
-    function pancakeCall(
+    function uniswapV2Call(
         address _sender,
         uint256 _amount0,
         uint256 _amount1,
@@ -131,7 +136,7 @@ contract PancakeswapFlashSwap {
         address token0 = IUniswapV2Pair(msg.sender).token0();
         address token1 = IUniswapV2Pair(msg.sender).token1();
 
-        address pair = IUniswapV2Factory(PANCAKE_FACTORY).getPair(
+        address pair = IUniswapV2Factory(UNISWAP_FACTORY).getPair(
             token0,
             token1
         );
@@ -151,25 +156,23 @@ contract PancakeswapFlashSwap {
         uint256 fee = ((amount * 3) / 997) + 1;
         uint256 amountToRepay = amount + fee;
 
-        // DO ARBITRAGE
         // Calculate loanAmount
         uint256 loanAmount = _amount0 > 0 ? _amount0 : _amount1;
 
-        // Place trades
-        uint256 trade1AcquiredCoin = placeTrade(BUSD, DOT, loanAmount);
-        uint256 trade2AcquiredCoin = placeTrade(DOT, CAKE, trade1AcquiredCoin);
-        uint256 trade3AcquiredCoin = placeTrade(CAKE, BUSD, trade2AcquiredCoin);
+        // Trade 1
+        uint256 trade1Acquired = placeTrade(USDC, LINK, loanAmount, UNISWAP_FACTORY, UNISWAP_ROUTER);
+
+        // Trade 2
+        uint256 trade2Acquired = placeTrade(LINK, USDC, trade1Acquired, SUSHI_FACTORY, SUSHI_ROUTER);
+       
 
         // Check profitable FlashLoan
-        bool profCheck = checkProfitableFlashSwap(
-            amountToRepay,
-            trade3AcquiredCoin
-        );
-        require(profCheck, "Arbitrage not profitable");
-
+        bool profCheck = checkProfitableFlashSwap(amountToRepay, trade2Acquired);
+        require(profCheck, "FlashCrossSwap not profitable");
+        
         // Pay myself
-        IERC20(BUSD).transfer(myAddress, trade3AcquiredCoin - amountToRepay);
-
+        IERC20(USDC).transfer(myAddress,trade2Acquired - amountToRepay);
+        
         // Pay loan back
         IERC20(tokenBorrow).transfer(pair, amountToRepay);
     }

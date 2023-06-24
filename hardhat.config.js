@@ -18,19 +18,19 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: "https://bsc-dataseed.binance.org",
+        url: "https://eth-mainnet.g.alchemy.com/v2/0HrHlhFOcL8RCj8WQ0P_JjrzcLRAWoe4",
       },
     },
     testnet: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      chainId: 97,
+      url: "https://eth-goerli.g.alchemy.com/v2/efmgfFKyXsy0pZocmybf8uTxx4dPHUm5",
+      chainId: 5,
       accounts: [
         "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
       ], // Private key to deploy
     },
     mainnet: {
-      url: "https://bsc-dataseed.binance.org",
-      chainId: 56,
+      url: "https://eth-mainnet.g.alchemy.com/v2/0HrHlhFOcL8RCj8WQ0P_JjrzcLRAWoe4",
+      chainId: 1
     },
   },
 };

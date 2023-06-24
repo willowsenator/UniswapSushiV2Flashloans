@@ -8,99 +8,97 @@ const {
 } = require("../artifacts/contracts/interfaces/IERC20.sol/IERC20.json");
 const provider = ethers.provider;
 
-const BUSD_WHALE = "0xf977814e90da44bfa03b6295a0616a897441acec";
-const WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-const BUSD = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
-const CAKE = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
-const USDT = "0x55d398326f99059fF775485246999027B3197955";
-const DOT = "0x7083609fCE4d1d8Dc0C979AAb8c869Ea2C873402";
-const BTCB = "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c";
-const ETH = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
+const USDC_WHALE = "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503";
+const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const LINK = "0x514910771AF9Ca656af840dff83E8264EcF986CA";
 
 describe("FlashSwap contract", () => {
   let FLASHSWAP,
     BORROW_AMOUNT,
     FUND_AMOUNT,
     initialFundingHuman,
-    txtArbitrage,
-    gasUsedUSD;
-  const DECIMALS = 18;
+    txFlashCrossSwap;
+  const DECIMALS_STABLE_COIN = 6;
+  const DECIMALS_TOKEN = 18;
 
-  const BASE_TOKEN_ADDRESS = BUSD;
+  const BASE_TOKEN_ADDRESS = USDC;
   tokenBase = new ethers.Contract(BASE_TOKEN_ADDRESS, abi, provider);
 
   beforeEach(async () => {
     [owner] = await ethers.getSigners();
 
-    const whale_balance = await provider.getBalance(BUSD_WHALE);
+    const whale_balance = await provider.getBalance(USDC_WHALE);
     expect(whale_balance).not.eq("0");
 
     // Deploy smart Contract
-    FLASHSWAP = await ethers.deployContract("PancakeswapFlashSwap");
+    FLASHSWAP = await ethers.deployContract("UniswapCrossSwap");
     await FLASHSWAP.waitForDeployment();
 
     // Configure borrowing
     const borrowInHuman = "1";
-    BORROW_AMOUNT = ethers.parseUnits(borrowInHuman, DECIMALS);
+    BORROW_AMOUNT = ethers.parseUnits(borrowInHuman, DECIMALS_STABLE_COIN);
 
     // Configure Funding -- FOR TESTING
     initialFundingHuman = "100";
-    FUND_AMOUNT = ethers.parseUnits(initialFundingHuman, DECIMALS);
+    FUND_AMOUNT = ethers.parseUnits(initialFundingHuman, DECIMALS_STABLE_COIN);
 
     // Fund our contract -- FOR TESTING
 
     await impersonateFundErc20(
       tokenBase,
-      BUSD_WHALE,
+      USDC_WHALE,
       FLASHSWAP.target,
-      initialFundingHuman
+      initialFundingHuman,
+      DECIMALS_STABLE_COIN
     );
   });
 
-  describe("Arbitrage Execution", () => {
+  describe("FlashCrossSwap Execution", () => {
     it("Ensure contract is funded", async () => {
       const flashswapBalance = await FLASHSWAP.getBalanceOfToken(
         BASE_TOKEN_ADDRESS
       );
       const flashswapBalanceInHuman = ethers.formatUnits(
         flashswapBalance,
-        DECIMALS
+        DECIMALS_STABLE_COIN
       );
 
       expect(Number(flashswapBalanceInHuman)).eq(Number(initialFundingHuman));
     });
 
-    it("Start arbitrage", async () => {
-      txtArbitrage = await FLASHSWAP.startArbitrage(
+    it("Start cross Swap", async () => {
+      txFlashCrossSwap = await FLASHSWAP.startCrossSwap(
         BASE_TOKEN_ADDRESS,
         BORROW_AMOUNT
       );
-      assert(txtArbitrage);
+      assert(txFlashCrossSwap);
 
       // Print balances
-      const contractBUSDBalance = await FLASHSWAP.getBalanceOfToken(BUSD);
-      const formattedBUSDBalance = ethers.formatUnits(
-        contractBUSDBalance,
-        DECIMALS
+      const contractUSDCBalance = await FLASHSWAP.getBalanceOfToken(USDC);
+      const formattedUSDCBalance = ethers.formatUnits(
+        contractUSDCBalance,
+        DECIMALS_STABLE_COIN
       );
 
-      console.log("Balance of BUSD: ", formattedBUSDBalance);
+      console.log("Balance of USDC: ", formattedUSDCBalance);
 
-      const contractDOTBalance = await FLASHSWAP.getBalanceOfToken(DOT);
-      const formattedDOTBalance = ethers.formatUnits(
-        contractDOTBalance,
-        DECIMALS
+      const contractLINKBalance = await FLASHSWAP.getBalanceOfToken(LINK);
+      const formattedLINKBalance = ethers.formatUnits(
+        contractLINKBalance,
+        DECIMALS_TOKEN
       );
 
-      console.log("Balance of DOT: ", formattedDOTBalance);
+      console.log("Balance of LINK: ", formattedLINKBalance);
 
-      const contractCAKEBalance = await FLASHSWAP.getBalanceOfToken(CAKE);
-      const formattedCAKEBalance = ethers.formatUnits(
-        contractCAKEBalance,
-        DECIMALS
-      );
+    });
 
-      console.log("Balance of CAKE: ", formattedCAKEBalance);
+    it("Gas used Output", async()=>{
+      const txReceipt = await provider.getTransactionReceipt(txFlashCrossSwap.hash);
+      const gasPrice = txReceipt.gasPrice;
+      const gasUsed = txReceipt.gasUsed;
+      const gasUsedETH = gasPrice * gasUsed;
+
+      console.log("TOTAL GAS USD: ", ethers.formatEther(gasUsedETH.toString()) * 1888);
     });
   });
 });
