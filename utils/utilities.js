@@ -7,6 +7,7 @@ const fundErc20 = async (contract, sender, recipient, amount, decimals) => {
   await contractSigner.transfer(recipient, FUND_AMOUNT);
 };
 
+
 const impersonateFundErc20 = async (contract, sender, recipient, amount, decimals) => {
   await network.provider.request({
     method: "hardhat_impersonateAccount",

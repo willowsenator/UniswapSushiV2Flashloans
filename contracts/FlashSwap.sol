@@ -89,7 +89,6 @@ contract UniswapCrossSwap {
     ) private pure returns (bool) {
         return _output > _input;
     }
-
     
     function startCrossSwap(address _tokenBorrow, uint256 _amount) external {
         IERC20(WETH).forceApprove(UNISWAP_ROUTER, MAX_INT);
@@ -131,7 +130,7 @@ contract UniswapCrossSwap {
         address token0 = IUniswapV2Pair(msg.sender).token0();
         address token1 = IUniswapV2Pair(msg.sender).token1();
 
-        address pair = IUniswapV2Factory(UNISWAP_FACTORY).getPair(
+         address pair = IUniswapV2Factory(UNISWAP_FACTORY).getPair(
             token0,
             token1
         );
@@ -150,6 +149,7 @@ contract UniswapCrossSwap {
         // Calculate the amount to repay
         uint256 fee = ((amount * 3) / 997) + 1;
         uint256 amountToRepay = amount + fee;
+
 
         // Calculate loanAmount
         uint256 loanAmount = _amount0 > 0 ? _amount0 : _amount1;
